@@ -25,33 +25,33 @@
                                         <br>
                                         <input type="text" name="title" id="title" value="{{ $post->title }}">
                                     </div>
-                                </div>
-                                @for ($i = 0; $i<count($texts) + count($images); $i++)
-                                    @for ($j = 0; $j<count($texts); $j++)
-                                        @if ( $texts[$j]->position == $i)
-                                            <div class="post-externalDiv">
-                                                <div class="post-text">
-                                                    <textarea name="" id="">{{ $texts[$j]->content }}</textarea>
-                                                </div>
-                                                <img class="remove-text-img" src="{{ asset("img/trash-alt-solid.svg") }}" alt="">
-                                            </div>
-                                        @endif
-                                    @endfor
-                                    @for ($j = 0; $j<count($images); $j++)
-                                        @if ( $images[$j]->position == $i)
-                                            <input type="file" name="" id={{ "imginput".$i }} accept="image/*">
-                                            <div class="post-externalDiv">
-                                                <div class="post-div">
-                                                    <div class="postimg-div">
-                                                        <img class="post-img" src="{{ asset("storage/".$images[$j]->url)}}" alt="" id={{ "img".$i }}>
+                                    @for ($i = 0; $i<count($texts) + count($images); $i++)
+                                        @for ($j = 0; $j<count($texts); $j++)
+                                            @if ( $texts[$j]->position == $i)
+                                                <div class="post-externalDiv">
+                                                    <div class="post-text" >
+                                                        <textarea name="" id="{{ $j }}" class="post-element">{{ $texts[$j]->content }}</textarea>
                                                     </div>
+                                                    <img class="remove-text-img" src="{{ asset("img/trash-alt-solid.svg") }}" alt="">
                                                 </div>
-                                                
-                                                <img class="remove-text-img" src="{{ asset("img/trash-alt-solid.svg") }}" alt="">
-                                            </div>
-                                        @endif
+                                            @endif
+                                        @endfor
+                                        @for ($j = 0; $j<count($images); $j++)
+                                            @if ( $images[$j]->position == $i)
+                                                <div class="post-externalDiv">
+                                                    <div class="post-div">
+                                                        <input type="file" name="" id={{ "imginput".$i }} accept="image/*">
+                                                        <div class="postimg-div">
+                                                            <img class="post-img post-element" src="{{ asset("storage/".$images[$j]->url)}}" alt="" id={{$i }}>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <img class="remove-text-img" src="{{ asset("img/trash-alt-solid.svg") }}" alt="">
+                                                </div>
+                                            @endif
+                                        @endfor
                                     @endfor
-                                @endfor                      
+                                </div>                      
                                 <div class="add-buttons">
                                     <a id="addtext-button">Add text</a> <a id="addimg-button">Add image</a>
                                 </div>

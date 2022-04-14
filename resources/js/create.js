@@ -2,8 +2,6 @@ const { default: axios } = require('axios');
 
 require('./bootstrap');
 
-console.log("hola");
-
 const post = document.getElementById("post");
 const addtext = document.getElementById("addtext-button");
 const addimg = document.getElementById("addimg-button");
@@ -31,7 +29,6 @@ addtext.addEventListener("click", function(){
 
     removeText.addEventListener("click", function(){
         elements.splice(elements.indexOf(this.parentNode.children[0].children[0]), 1);
-        console.log(elements);
         this.parentNode.remove();
     });
 })
@@ -67,7 +64,6 @@ addimg.addEventListener("click", function(){
 
     removeText.addEventListener("click", function(){
         elements.splice(elements.indexOf(this.parentNode.children[0].children[0]), 1);
-        console.log(elements);
         this.parentNode.remove();
     });
 })
@@ -83,26 +79,20 @@ post_button.addEventListener("click", function(){
             formData.append(`images[${imgIndex}][img]`, element.files[0]);
             formData.append(`images[${imgIndex}][pos]`, pos);
             imgIndex++;
-            //images.push({element: element.files[0], index: index});
         }else{
             formData.append(`texts[${txtIndex}][txt]`, element.value);
             formData.append(`texts[${txtIndex}][pos]`, pos);
             txtIndex++;
-            //texts.push({element: element.value, index: pos});
         }
     })
 
     formData.append("title", document.getElementById("title").value);
-    //formData.append("texts[]", texts);
-    console.log(images);
     axios.post("/posts",formData,{
         headers: {
             'Content-Type': 'multipart/form-data',
-            //'Accept': '*/*',
         }
     })
     .then(res => {
-        console.log(res.data);
         window.location.href='../home';
     }).catch(err => {
         console.log(err);

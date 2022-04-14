@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Support\Env;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Symfony\Component\ErrorHandler\Debug;
 
 class PostController extends Controller
 {
@@ -52,16 +53,9 @@ class PostController extends Controller
      */
     public function store(Request $request)
     {
-
-        //Log::debug($request->all());
-        //Log::debug($request->file('images'));
-        
-
         $data = $request->all();
 
         $title = $data['title'];
-        
-        //$images = $data['images'];
 
         $post = new Post();
         $post->title = $title;
@@ -92,7 +86,6 @@ class PostController extends Controller
             foreach($images as $image){
                 $path = $image['img']->store("public/img/posts");
                 $path = substr($path, 6, strlen($path));
-                Log::debug($path);
                 $img = new Image();
                 $img->url = $path;
                 $img->position = $image['pos'];
@@ -118,6 +111,7 @@ class PostController extends Controller
     public function show($id)
     {
         $post = Post::find($id);
+
         $images = Image::where('post_id', $post->id)->get();
         $texts = Text::all()->where('post_id', $post->id);
 
@@ -170,6 +164,115 @@ class PostController extends Controller
      */
     public function update(Request $request, $id)
     {
+        $data = $request->all();
+        
+        $title = $data['title'];
+
+        $post = Post::find($id);
+
+        $post->update(['title' => $title]);
+
+        if($request->has('texts')){
+            $texts = $data['texts'];
+            
+            $former_texts = Text::where("post_id", $id)->get();
+            if($request->has('deleted_texts')){
+                $deleted_txts = $data['deleted_txts'];
+                foreach($deleted_txts as $deleted_txt){
+                    $txt = Text::where('post_id', $id, 'and')->where('position', $deleted_txt['id'])->first();
+                    $txt->delete();
+                }
+            }
+            
+            $texts_without_deleted = Text::where("post_id", $id)->get();
+            $index=0;
+            foreach($former_texts as $former_text){
+                if(array_key_exists($index, $texts)){
+                    $text = $texts[$index];
+                    $element = $text['txt'];
+                    $position = $text['pos'];
+                    
+                    $former_text->update(['content' => $element]);
+                    $former_text->update(['position' => $position]);
+                }else{
+                    $former_text->delete();
+                }
+                $index++;
+            }
+
+            $i = 0;
+            if($texts_without_deleted){
+                $i = count($texts_without_deleted);
+            }
+
+            while($i < count($texts)){
+                $text = $texts[$i];
+                $element = $text['txt'];
+                $position = $text['pos'];
+    
+                $txt = new Text();
+                $txt->content = $element;
+                $txt->position = $position;
+                $txt->post_id = $post->id;
+    
+                $txt->save();
+                $txt->post()->associate($post->id);
+                $i++;
+            }
+        }
+
+        if($request->has('deleted_imgs')){
+            $deleted_imgs = $data['deleted_imgs'];
+            foreach($deleted_imgs as $image){
+                $img = Image::where('url', $image['img']);
+                $img->delete();
+                unlink('storage/'.$image['img']);
+            }
+        }
+
+        if($request->has('updated_imgs')){
+            $request->file('updated_imgs');
+            $updated_imgs = $data['updated_imgs'];
+            foreach($updated_imgs as $image){
+                $img = Image::where('url', $image['img']);
+                $img->delete();
+                unlink('storage/'.$image['img']);
+                $path = $image['file']->store("public/img/posts");
+                $path = substr($path, 6, strlen($path));
+                $img = new Image();
+                $img->url = $path;
+                $img->position = $image['pos'];
+                $img->post_id = $post->id;
+                $img->save();
+                $img->post()->associate($post->id);
+            }
+        }
+
+        if($request->has('images')){
+            $request->file('images');
+            $images = $data['images'];
+            foreach($images as $image){
+                if(gettype($image['img'])=='object'){
+                    $path = $image['img']->store("public/img/posts");
+                    $path = substr($path, 6, strlen($path));
+                    $img = new Image();
+                    $img->url = $path;
+                    $img->position = $image['pos'];
+                    $img->post_id = $post->id;
+                    $img->save();
+                    $img->post()->associate($post->id);
+                }else{
+                    $img = Image::where('url', $image['img']);
+                    $img->update(['position' => $image['pos']]);
+                }
+                
+            }
+        }
+
+        $admin = User::where('email', env('ADMIN_MAIL'))->first();
+        $posts = $admin->posts()->orderBy('created_at', 'DESC')->get();
+
+        return $posts;
 
     }
 

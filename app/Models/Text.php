@@ -11,7 +11,7 @@ class Text extends Model
 
     protected $fillable = [
         'content',
-        'index',
+        'position',
     ];
 
     public function post()

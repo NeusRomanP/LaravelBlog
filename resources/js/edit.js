@@ -1,16 +1,97 @@
 const { default: axios } = require('axios');
+const { forEach } = require('lodash');
 
 require('./bootstrap');
-
-console.log("hola");
 
 const post = document.getElementById("post");
 const addtext = document.getElementById("addtext-button");
 const addimg = document.getElementById("addimg-button");
 const post_button = document.getElementById("post-button");
+const remove_buttons = document.getElementsByClassName("remove-text-img");
+let els = document.getElementsByClassName("post-element");
 
 let elements_count = 0;
 let elements = [];
+let deleted_imgs = [];
+let deleted_txts = [];
+let updated_imgs = [];
+
+function getElements(){
+    
+    for(let i = 0; i<els.length;i++){
+        if(els[i].src){
+            let src = {
+                content: "/img" + els[i].src.split("/img")[1],
+                type: "img",
+                id: i
+            }
+            elements.push(src);
+        }else{
+            let txt = {
+                content: els[i].innerHTML,
+                type: "txt",
+                id: i
+            }
+            elements.push(txt);
+        }
+    }
+}
+
+function addRemove(){
+    for(let i = 0; i < remove_buttons.length; i++){
+        remove_buttons[i].addEventListener("click", function(){
+            let el = this.parentNode.children[0].children[0];
+            if(el.type=="file"){
+                let img = el.parentNode.children[1].children[0];
+                let src = "/img" + img.src.split("/img")[1];
+                
+                deleted_imgs.push(src);
+                elements.splice(elements.map(function(x) {return x.id; }).indexOf(parseInt(img.id)), 1);
+                this.parentNode.remove()
+            }else{
+                deleted_txts.push(elements[elements.map(function(x) {return x.id; }).indexOf(parseInt(this.parentNode.children[0].children[0].id))]);
+                elements.splice(elements.map(function(x) {return x.id; }).indexOf(parseInt(this.parentNode.children[0].children[0].id)), 1);
+                this.parentNode.remove();
+            }
+
+            elements.forEach((element, index) => {
+                element["id"] = index;
+            });
+            
+        })
+    }
+}
+
+function addChangeImg(){
+    let els = document.querySelectorAll('input[type=file]')
+    let index = 0;
+    elements.forEach(element => {
+        if(element["type"]=="img"){
+            els[index].addEventListener("change", function(e){
+                let former_img = element;
+                element.img = URL.createObjectURL(e.target.files[0]);
+                let img = {
+                    img: former_img['content'],
+                    file: this.files[0],
+                    pos: index
+                }
+                updated_imgs.push(img);
+                this.parentNode.children[1].children[0].src = URL.createObjectURL(e.target.files[0]);
+            })
+            index ++;
+        }
+    });
+    els.forEach(el => {
+        
+    });
+    
+}
+
+getElements();
+addRemove();
+addChangeImg();
+
+
 
 addtext.addEventListener("click", function(){
     const externalDiv = document.createElement("div");
@@ -31,7 +112,6 @@ addtext.addEventListener("click", function(){
 
     removeText.addEventListener("click", function(){
         elements.splice(elements.indexOf(this.parentNode.children[0].children[0]), 1);
-        console.log(elements);
         this.parentNode.remove();
     });
 })
@@ -67,7 +147,6 @@ addimg.addEventListener("click", function(){
 
     removeText.addEventListener("click", function(){
         elements.splice(elements.indexOf(this.parentNode.children[0].children[0]), 1);
-        console.log(elements);
         this.parentNode.remove();
     });
 })
@@ -83,27 +162,48 @@ post_button.addEventListener("click", function(){
             formData.append(`images[${imgIndex}][img]`, element.files[0]);
             formData.append(`images[${imgIndex}][pos]`, pos);
             imgIndex++;
-            //images.push({element: element.files[0], index: index});
+        }else if(element["type"] == "img"){
+            formData.append(`images[${imgIndex}][img]`, element["content"]);
+            formData.append(`images[${imgIndex}][pos]`, pos);
+            imgIndex++;
+        }else if(element["type"] == "txt"){
+            let post_element = document.getElementsByClassName("post-element")[pos];
+            element["content"] = els[pos].value;
+            formData.append(`texts[${txtIndex}][txt]`, element["content"]);
+            formData.append(`texts[${txtIndex}][pos]`, pos);
+            txtIndex++;
         }else{
             formData.append(`texts[${txtIndex}][txt]`, element.value);
             formData.append(`texts[${txtIndex}][pos]`, pos);
             txtIndex++;
-            //texts.push({element: element.value, index: pos});
         }
+    })
+    deleted_imgs.forEach(function(deleted_img, pos){
+        formData.append(`deleted_imgs[${pos}][img]`, deleted_img);
+    })
+
+    updated_imgs.forEach(function(updated_img, pos){
+        formData.append(`updated_imgs[${pos}][img]`, updated_img["img"]);
+        formData.append(`updated_imgs[${pos}][pos]`, updated_img["pos"]);
+        formData.append(`updated_imgs[${pos}][file]`, updated_img["file"]);
+    })
+
+    
+
+    deleted_txts.forEach(function(deleted_txt, pos){
+        formData.append(`deleted_txts[${pos}][txt]`, deleted_txt['txt']);
+        formData.append(`deleted_txts[${pos}][id]`, deleted_txt['id']);
     })
 
     formData.append("title", document.getElementById("title").value);
-    //formData.append("texts[]", texts);
-    console.log(images);
-    axios.post("/posts",formData,{
+    let location=window.location.href.split("/")
+    axios.post("/posts/"+location[location.length-1],formData,{
         headers: {
             'Content-Type': 'multipart/form-data',
-            //'Accept': '*/*',
         }
     })
     .then(res => {
-        console.log(res.data);
-        window.location.href='../home';
+        window.location.href='../../home';
     }).catch(err => {
         console.log(err);
     })
